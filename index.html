@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualización de Riesgo: Porta Hermanos S.A.</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { --danger-red: #d32f2f; --warning-orange: #f57c00; --info-yellow: #fbc02d;  --safe: #2e7d32; --dark: #121212; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; height: 100vh; }
+
+        /* UI Elements */
+        .header { background: var(--dark); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--danger); }
+
+        .btn { background: var(--danger-red); color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn:hover { background: #b71c1c; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        
+        .modal-content { background: white; margin: 5% auto; padding: 25px; width: 70%; max-height: 80vh; overflow-y: auto; border-radius: 8px; line-height: 1.6; }
+        
+        .close { float: right; font-size: 28px; cursor: pointer; }
+
+        .legend { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+        
+        .legend i { width: 15px; height: 15px; float: left; margin-right: 8px; border-radius: 50%; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        
+        th { background: #f2f2f2; }
+        #map { flex-grow: 1; width: 100%; border-bottom: 4px solid #333; }
+
+        .dashboard { padding: 20px; background: #1a1a1a; color: white; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        
+        .stat-card { border-left: 4px solid var(--danger-red); padding-left: 10px; }
+        
+        .stat-card h4 { margin: 0; color: #aaa; font-size: 0.8rem; text-transform: uppercase; }
+        
+        .stat-card p { margin: 5px 0 0; font-size: 1.2rem; font-weight: bold; }
+        
+        .legend { background: rgba(255,255,255,0.9); padding: 10px; line-height: 1.5; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+        
+        .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8; border-radius: 50%;
+         }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div><strong>Simulación Técnica: Riesgo de Explosión e Incendio</strong></div>
+    <button class="btn" onclick="openModal()">Ficha Técnica y Fuentes</button>
+</div>
+
+<div id="map"></div>
+
+<div class="dashboard">
+    <div class="stat-card">
+        <h4>Carga de Fuego Total</h4>
+        <p>1.881,12 kg/m²</p>
+    </div>
+    <div class="stat-card" style="border-color: var(--warning-orange);">
+        <h4>Energía Disponible</h4>
+        <p>49.661 MKcal</p>
+    </div>
+    <div class="stat-card" style="border-color: var(--info-yellow);">
+        <h4>Riesgo Legislado</h4>
+        <p>Riesgo 1 (Inflamables)</p>
+    </div>
+    <div class="stat-card" style="border-color: #fff;">
+        <h4>Sustancia Crítica</h4>
+        <p>115.000 kg Alcohol</p>
+    </div>
+</div>
+<div id="techModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Informe de Ingeniería de Seguridad Ambiental</h2>
+        <hr>
+        <h3>1. Datos de Carga de Fuego (Informe VUDAS 2025)</h3>
+        <p>El establecimiento presenta un potencial calorífico crítico debido a la densidad de materiales almacenados.</p>
+        <table>
+            <tr><th>Parámetro</th><th>Valor Declarado</th></tr>
+            <tr><td>Carga de Fuego Equiv. (Madera)</td><td>1.881,12 kg/m²</td></tr>
+            <tr><td>Energía Térmica Total</td><td>49.661.900.000 Kcal</td></tr>
+            <tr><td>Sustancia Crítica (Alcohol)</td><td>115.000 kg</td></tr>
+            <tr><td>Sustancia Sólida (Maíz)</td><td>10.600.000 kg</td></tr>
+            <tr><td>Clasificación de Riesgo</td><td>Riesgo 1 (Inflamables de 1ra Cat.)</td></tr>
+        </table>
+
+        <h3>2. Análisis de Dispersión de Humos y Gases</h3>
+        <p>Se ha modelado una pluma de dispersión considerando el <strong>viento Norte</strong> predominante en Córdoba. En caso de incendio masivo, el área de afectación por monóxido de carbono y compuestos orgánicos volátiles (COVs) se extiende hacia el Sur, afectando directamente a Barrio San Antonio e Inaudi.</p>
+
+        <h3>3. Fuentes y Autoría</h3>
+        <ul>
+            <li><strong>Organización Solicitante:</strong> VUDAS (Vecinos Unidos en Defensa de un Ambiente Sano).</li>
+            <li><strong>Responsable Técnico:</strong> Lic. Leonardo Aparicio (Ing. Seguridad Ambiental - Mat. CIEC 280347/4858).</li>
+            <li><strong>Ubicación:</strong> Cno. a San Antonio km 4½, Bº La Huertilla, Córdoba.</li>
+            <li><strong>Más información:</strong> <a href="https://vudas.wordpress.com" target="_blank">vudas.wordpress.com</a></li>
+        </ul>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Coordenadas precisas: Camino a San Antonio km 4.5, Córdoba
+    const latlng = [-31.471211665336867, -64.18924950823913];
+    
+    const map = L.map('map').setView(latlng, 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap | Datos Técnicos: Informe Carga de Fuego 2025'
+    }).addTo(map);
+
+    // Icono Personalizado para la Planta
+    const plantaIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: "<div style='background-color:#000; color:white; padding:5px; border-radius:5px; border:1px solid white; font-size:10px; width:80px; text-align:center;'>Porta Hnos.</div>",
+        iconSize: [80, 20],
+        iconAnchor: [40, 10]
+    });
+    L.marker(latlng, {icon: plantaIcon}).addTo(map);
+
+    // --- RADIOS DE DAÑO BASADOS EN MASA CRÍTICA (115tn Alcohol) ---
+
+    // 3. ZONA DE ROTURA DE CRISTALES (1 psi)
+    // Impacto urbano extendido hasta zonas de tránsito masivo.
+    L.circle(latlng, {
+        color: '#ffff00', fillColor: '#ffff00', fillOpacity: 0.15, radius: 1100
+    }).addTo(map).bindPopup("<b>Zona Amarilla (1.1km):</b> Rotura generalizada de vidrios y lesiones por esquirlas.");
+    
+    // 2. ZONA DE DAÑO GRAVE (3.5 psi)
+    // Derrumbe de paredes de ladrillo y daños severos en Barrio San Antonio.
+    L.circle(latlng, {
+        color: '#ff7800', fillColor: '#ff7800', fillOpacity: 0.3, radius: 450
+    }).addTo(map).bindPopup("<b>Zona Naranja (450m):</b> Daño estructural grave en viviendas aledañas.");
+
+    // 1. ZONA DE SOBREPRESIÓN LETAL (>10 psi)
+    // Destrucción total de estructuras industriales y viviendas.
+    L.circle(latlng, {
+        color: '#ff0000', fillColor: '#ff0000', fillOpacity: 0.4, radius: 180
+    }).addTo(map).bindPopup("<b>Zona Roja (180m):</b> Destrucción estructural total. Fatalidades probables.");
+
+
+    // Leyenda
+    const legend = L.control({position: 'topright'});
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML += '<b>Radios de Explosión (VCE)</b><br>';
+        div.innerHTML += '<i style="background: #ff0000"></i> Sobrepresión >10 psi<br>';
+        div.innerHTML += '<i style="background: #ff7800"></i> Sobrepresión 3.5 psi<br>';
+        div.innerHTML += '<i style="background: #ffff00"></i> Sobrepresión 1 psi<br>';
+        return div;
+    };
+    legend.addTo(map);
+
+        // Funciones Modal
+    function openModal() { document.getElementById("techModal").style.display = "block"; }
+    function closeModal() { document.getElementById("techModal").style.display = "none"; }
+
+</script>
+</body>
+</html>
